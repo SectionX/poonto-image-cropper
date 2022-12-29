@@ -1,0 +1,6 @@
+mode:auto
+imageviewer:photos
+inputfile:Source Files
+outputfile:Output Files
+failedfile:Failed
+correction:150
