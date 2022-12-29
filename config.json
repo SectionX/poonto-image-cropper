@@ -1,0 +1,10 @@
+{
+    "mode":"auto",
+    "imageviewer":"photos",
+    "inputfile":"Source Files",
+    "outputfile":"Output Files",
+    "errorlog":"errorlog.txt",
+    "correction":"150",
+    "dimensions":[[740, 740]],
+    "formats": ["jpg", "jpeg", "png", "webp", "bmp"]
+}
