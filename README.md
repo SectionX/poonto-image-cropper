@@ -50,3 +50,20 @@ Multithreading:
 
 Το πρόγραμμα χρησιμοποιεί τα μισά από τα threads του υπολογιστή. Αυτό μπορεί να αλλάξει προσθέτοντας
 το πεδίο "threads":integer στο config.json
+
+----------------------------
+
+
+Devnotes:
+
+py2exe makes the application frozen. For multithreaded applications, this requires to import
+the free_support function of the multiprocessing module and run it under the __name__ check
+
+Additionally, by making it an exe, it doesn't have a __file__ attribute anymore. The relevant
+code looks like this
+
+
+if hasattr(sys, "frozen"):
+    root_dir = rootdir = os.path.abspath(os.path.dirname(sys.executable))
+else:
+    root_dir = os.path.abspath(os.path.dirname(__file__))

@@ -1,6 +1,6 @@
 from PIL import Image
 import json
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, freeze_support
 import pygetwindow as gw
 import psutil
 import os
@@ -52,12 +52,18 @@ class Config:
 
 config = Config().get_configuration()
 config_file = {}
-for file in os.scandir(os.path.dirname(__file__)):
+
+if hasattr(sys, "frozen"):
+    root_dir = rootdir = os.path.abspath(os.path.dirname(sys.executable))
+else:
+    root_dir = os.path.abspath(os.path.dirname(__file__))
+
+for file in os.scandir(root_dir):
     if file.name == 'config.json':
         with open(file.name, 'r') as f: config_file = json.load(f)
         break
 
-if config_file['mode'] != "ignore":
+if config_file and config_file['mode'] != "ignore":
     for k, v in config_file.items():
         config[k] = v
 
@@ -109,15 +115,19 @@ def main(config = config):
     create_folders(config)
     image_names = get_source_filenames(config)
     images: Generator[str, dict] = ([i.name, config] for i in image_names)
-    print(sys.getsizeof(images))
     with Pool(config["threads"]) as pool:
         pool.map(resize_image, images)
 
 
 if __name__ == "__main__":
-    start = perf_counter()
-    main()
-    print(perf_counter() - start)
+    freeze_support()
+    try:
+        start = perf_counter()
+        main()
+        print(perf_counter() - start)
+    except Exception as e:
+        print(e)
+    
     input("Press enter to exit the program.")
 
 
