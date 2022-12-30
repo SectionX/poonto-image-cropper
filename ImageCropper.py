@@ -1,12 +1,15 @@
 from PIL import Image
 import json
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import pygetwindow as gw
 import psutil
 import os
 import msvcrt
 import sys
-import time
+from time import perf_counter, sleep, time
+from typing import Generator
+from pprint import pprint
+from datetime import datetime as dt
 
 
 
@@ -17,10 +20,11 @@ class Config:
         imageviewer = "photos",
         inputfile = "Source Files",
         outputfile = "Output Files",
-        errorlog = "errorlog.txt",
+        errorlog = f"{dt.now().strftime('%Y-%m-%d-%H%M')} - errorlog.txt",
         correction = "150",
         dimensions = [[740, 740]],
-        formats =  ["jpg", "jpeg", "png", "webp", "bmp"]
+        formats =  ["jpg", "jpeg", "png", "webp", "bmp"],
+        threads = cpu_count() // 2
     ):
         self.mode = mode
         self.imageviewer = imageviewer 
@@ -30,6 +34,7 @@ class Config:
         self.correction = correction
         self.dimensions = dimensions
         self.formats = formats
+        self.threads = threads
     
 
     def get_configuration(self):
@@ -42,9 +47,22 @@ class Config:
             "correction":self.correction,
             "dimensions":self.dimensions,
             "formats":self.formats,
+            "threads":self.threads
         }
 
 config = Config().get_configuration()
+config_file = {}
+for file in os.scandir(os.path.dirname(__file__)):
+    if file.name == 'config.json':
+        with open(file.name, 'r') as f: config_file = json.load(f)
+        break
+
+if config_file['mode'] != "ignore":
+    for k, v in config_file.items():
+        config[k] = v
+
+
+
 
 
 def create_folders(data: dict) -> None:
@@ -58,13 +76,8 @@ def create_folders(data: dict) -> None:
         except: pass
 
 
-def get_source_filenames(data: dict) -> list[str]:
-    return os.listdir(data["inputfile"])
-
-
-def test_function(args):
-    image, config = args
-    print(image, config)
+def get_source_filenames(data: dict) -> Generator:
+    return os.scandir(data["inputfile"])
 
 
 def resize_image(args):
@@ -89,17 +102,23 @@ def resize_image(args):
                 f.write(f"File {image} is not an image\n")
 
 
-def main(threads = 4, config = config):
+def main(config = config):
+    print("Running application with settings:")
+    pprint(config)
+    sleep(3)
     create_folders(config)
     image_names = get_source_filenames(config)
-    config_data = [config]*len(image_names)
-    images: tuple[str, dict] = zip(image_names, config_data)
-    with Pool(threads) as pool:
+    images: Generator[str, dict] = ([i.name, config] for i in image_names)
+    print(sys.getsizeof(images))
+    with Pool(config["threads"]) as pool:
         pool.map(resize_image, images)
 
 
 if __name__ == "__main__":
+    start = perf_counter()
     main()
+    print(perf_counter() - start)
+    input("Press enter to exit the program.")
 
 
 
