@@ -1,0 +1,1 @@
+python -m setup py2exe
